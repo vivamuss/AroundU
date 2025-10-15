@@ -41,6 +41,7 @@ export default function LoginScreen() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/deals");
+      router.push("/");
     } catch (err) {
       let errorMessage = "An error occurred during login";
       

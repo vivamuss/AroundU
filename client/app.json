@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "AroundU",
+    "slug": "AroundU",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "icon": "./assets/images/icons.jpg",
+    "scheme": "AroundU",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
