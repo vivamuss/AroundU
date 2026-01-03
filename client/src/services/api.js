@@ -5,9 +5,9 @@ import axios from "axios";
 
 // Detect device type for correct baseURL
 const getBaseURL = () => {
-  if (Platform.OS === "android") return "http://10.5.185.113:5000/api";
+  if (Platform.OS === "android") return "http://10.11.155.193:5000/api";
   //if (Platform.OS === "web") return `http://${LOCAL_IP}:5000/api`;
-  return "http://10.5.185.113:5000/api"; // iOS / web
+  return "http://10.11.155.193:5000/api"; // iOS / web
 };
 
 const API = axios.create({

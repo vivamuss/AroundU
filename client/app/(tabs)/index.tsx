@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { 
   View, 
   Text, 
@@ -8,7 +8,8 @@ import {
   SafeAreaView,
   Animated,
   Easing,
-  Dimensions
+  Dimensions,
+  Vibration
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -18,32 +19,67 @@ const { width, height } = Dimensions.get("window");
 
 // New Color Palette
 const COLORS = {
-  primary: '#2E8B57',        // Sea Green
-  primaryLight: '#3CB371',   // Medium Sea Green
-  primaryDark: '#228B22',    // Forest Green
-  secondary: '#FF6B35',      // Coral Orange
-  accent: '#4169E1',         // Royal Blue
+  primary: '#7338A0',
+  primaryLight: '#9E72C3',
+  primaryDark: '#4A2574',
+  secondary: '#924DBF',
+  accent: '#0F0529',
   background: '#F8F9FA',
-  text: '#1A1A1A',
-  textLight: '#666',
-  white: '#FFFFFF',
   card: '#FFFFFF',
+  text: '#0F0529',
+  textLight: '#4A2574',
+  notification: '#924DBF',
+  white: '#FFFFFF',
+};
+
+const NOTIFICATION_TYPES = {
+  DEAL_ALERT: 'deal_alert',
+  NEARBY_OFFER: 'nearby_offer',
+  ORDER_UPDATE: 'order_update',
+  SYSTEM: 'system'
 };
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotificationBell, setShowNotificationBell] = useState(false);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(30)).current;
   const headerSlideAnim = useRef(new Animated.Value(-50)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const bellPulseAnim = useRef(new Animated.Value(1)).current;
+  const notificationAnim = useRef(new Animated.Value(0)).current;
   
   // New background animation values
   const gradientAnim = useRef(new Animated.Value(0)).current;
   const particleAnim = useRef(new Animated.Value(0)).current;
   const waveAnim = useRef(new Animated.Value(0)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  // Mock notification data
+  const mockNotifications = [
+    {
+      id: 1,
+      type: NOTIFICATION_TYPES.DEAL_ALERT,
+      title: "New Deal Nearby!",
+      message: "50% off all pizzas at Mario's Pizzeria - expires in 2 hours",
+      timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+      read: false,
+      data: { dealId: 1 }
+    },
+    {
+      id: 2,
+      type: NOTIFICATION_TYPES.ORDER_UPDATE,
+      title: "Order Confirmed",
+      message: "Your coffee order has been confirmed and is being prepared",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+      read: false,
+      data: { orderId: 123 }
+    }
+  ];
 
   const deals = [
     { id: 1, title: "50% Off Pizza", description: "Local pizzeria offering half-price large pizzas", distance: "0.5mi", category: "Food", path: "/offers/pizza", color: "#FF9F43", icon: "pizza" },
@@ -53,6 +89,10 @@ export default function HomeScreen() {
   ];
 
   useEffect(() => {
+    // Load notifications
+    setNotifications(mockNotifications);
+    setUnreadCount(mockNotifications.filter(n => !n.read).length);
+    
     // Start animations when component mounts
     Animated.parallel([
       // Fade in animation
@@ -84,6 +124,21 @@ export default function HomeScreen() {
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+        ])
+      ),
+      // Bell pulse animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bellPulseAnim, {
+            toValue: 1.2,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bellPulseAnim, {
             toValue: 1,
             duration: 1000,
             useNativeDriver: true,
@@ -135,7 +190,176 @@ export default function HomeScreen() {
         ])
       ),
     ]).start();
+
+    // Simulate receiving a new notification after 3 seconds
+    const notificationTimer = setTimeout(() => {
+      showNewNotification();
+    }, 3000);
+
+    return () => clearTimeout(notificationTimer);
   }, []);
+
+  // Function to show a new notification
+  const showNewNotification = () => {
+    const newNotification = {
+      id: Date.now(),
+      type: NOTIFICATION_TYPES.DEAL_ALERT,
+      title: "Flash Sale! ⚡",
+      message: "Limited time: 60% off all fitness memberships near you",
+      timestamp: new Date(),
+      read: false,
+      data: { dealId: 3 }
+    };
+
+    setNotifications(prev => [newNotification, ...prev]);
+    setUnreadCount(prev => prev + 1);
+    setShowNotificationBell(true);
+    
+    // Trigger notification animation
+    Animated.sequence([
+      Animated.timing(notificationAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.delay(3000),
+      Animated.timing(notificationAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      })
+    ]).start();
+
+    // Vibrate device
+    Vibration.vibrate(500);
+  };
+
+  // Floating Notification Component
+  const FloatingNotification = () => {
+    const translateY = notificationAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-100, 0],
+    });
+
+    const opacity = notificationAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    });
+
+    if (!showNotificationBell) return null;
+
+    return (
+      <Animated.View
+        style={[
+          styles.floatingNotification,
+          {
+            transform: [{ translateY }],
+            opacity,
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={[COLORS.notification, '#FF6B6B']}
+          style={styles.floatingNotificationGradient}
+        >
+          <View style={styles.floatingNotificationContent}>
+            <Ionicons name="flash" size={20} color="white" />
+            <View style={styles.floatingNotificationText}>
+              <Text style={styles.floatingNotificationTitle}>
+                Flash Sale!
+              </Text>
+              <Text style={styles.floatingNotificationMessage} numberOfLines={1}>
+                60% off fitness memberships
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowNotificationBell(false)}>
+              <Ionicons name="close" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+    );
+  };
+
+  // Notification Bell Component
+  const NotificationBell = () => (
+    <TouchableOpacity 
+      style={styles.notificationBell}
+      onPress={() => router.push('/auth/notification')}
+    >
+      <Animated.View style={{ transform: [{ scale: bellPulseAnim }] }}>
+        <Ionicons name="notifications" size={24} color={COLORS.text} />
+        {unreadCount > 0 && (
+          <View style={styles.notificationBadge}>
+            <Text style={styles.notificationBadgeText}>
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </Text>
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+
+  // Quick Notification Preview Component
+  const NotificationPreview = () => {
+    const unreadNotifications = notifications.filter(n => !n.read).slice(0, 2);
+    
+    if (unreadNotifications.length === 0) return null;
+
+    return (
+      <View style={styles.notificationPreview}>
+        <View style={styles.notificationPreviewHeader}>
+          <Text style={styles.notificationPreviewTitle}>Recent Notifications</Text>
+          <TouchableOpacity onPress={() => router.push("/auth/notification")}>
+            <Text style={styles.seeAllText}>View All</Text>
+          </TouchableOpacity>
+        </View>
+        {unreadNotifications.map((notification, index) => (
+          <TouchableOpacity
+            key={notification.id}
+            style={[
+              styles.notificationPreviewItem,
+              index > 0 && styles.notificationPreviewItemNotFirst
+            ]}
+            onPress={() => {
+              // Mark as read
+              setNotifications(prev =>
+                prev.map(n =>
+                  n.id === notification.id ? { ...n, read: true } : n
+                )
+              );
+              setUnreadCount(prev => Math.max(0, prev - 1));
+              
+              // Navigate based on type
+              if (notification.type === NOTIFICATION_TYPES.DEAL_ALERT) {
+                router.push('/offers/fitness');
+              }
+            }}
+          >
+            <View style={styles.notificationPreviewIcon}>
+              <Ionicons 
+                name={
+                  notification.type === NOTIFICATION_TYPES.DEAL_ALERT ? "pricetag" :
+                  notification.type === NOTIFICATION_TYPES.ORDER_UPDATE ? "receipt" :
+                  notification.type === NOTIFICATION_TYPES.NEARBY_OFFER ? "location" : "notifications"
+                } 
+                size={16} 
+                color="white" 
+              />
+            </View>
+            <View style={styles.notificationPreviewContent}>
+              <Text style={styles.notificationPreviewItemTitle} numberOfLines={1}>
+                {notification.title}
+              </Text>
+              <Text style={styles.notificationPreviewItemMessage} numberOfLines={2}>
+                {notification.message}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   // Animated Gradient Background
   const AnimatedGradientBackground = () => {
@@ -507,6 +731,9 @@ export default function HomeScreen() {
       <ShimmerEffect />
       <BouncingDealIcons />
       
+      {/* Floating Notification */}
+      <FloatingNotification />
+      
       {/* Enhanced Floating Background Shapes */}
       <FloatingShape size={200} color={COLORS.primary} top={-100} left={-50} delay={0} rotation={45} />
       <FloatingShape size={150} color={COLORS.secondary} top={200} left={width - 100} delay={1000} rotation={-30} />
@@ -530,17 +757,28 @@ export default function HomeScreen() {
           <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>Good morning! 👋</Text>
+              {unreadCount > 0 && (
+                <Text style={styles.notificationSubtitle}>
+                  You have {unreadCount} new notification{unreadCount !== 1 ? 's' : ''}
+                </Text>
+              )}
             </View>
-            <TouchableOpacity style={styles.profileButton}>
-              <LinearGradient
-                colors={[COLORS.primary, COLORS.primaryLight]}
-                style={styles.profileGradient}
-              >
-                <Ionicons name="person" size={20} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <NotificationBell />
+              <TouchableOpacity style={styles.profileButton}>
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.primaryLight]}
+                  style={styles.profileGradient}
+                >
+                  <Ionicons name="person" size={20} color="white" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
+
+        {/* Notification Preview Section */}
+        <NotificationPreview />
 
         {/* Hero Banner */}
         <Animated.View 
@@ -566,7 +804,7 @@ export default function HomeScreen() {
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
                 <TouchableOpacity 
                   style={styles.heroButton} 
-                  onPress={() => router.push("../(tabs)/offers/explore")}
+                  onPress={() => router.push("../(tabs)/explore")}
                 >
                   <Text style={styles.heroButtonText}>Explore Now →</Text>
                 </TouchableOpacity>
@@ -780,11 +1018,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
   },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
   greeting: { 
     fontSize: 24, 
     fontWeight: "700", 
     color: COLORS.text,
     marginBottom: 4,
+  },
+  notificationSubtitle: {
+    fontSize: 14,
+    color: COLORS.notification,
+    fontWeight: "600",
+  },
+  notificationBell: {
+    padding: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: COLORS.notification,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   profileButton: { 
     padding: 4,
@@ -800,6 +1070,99 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+  },
+  floatingNotification: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+  floatingNotificationGradient: {
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: COLORS.notification,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingNotificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  floatingNotificationText: {
+    flex: 1,
+  },
+  floatingNotificationTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  floatingNotificationMessage: {
+    color: 'white',
+    fontSize: 14,
+    opacity: 0.9,
+  },
+  notificationPreview: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  notificationPreviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  notificationPreviewTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  notificationPreviewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  notificationPreviewItemNotFirst: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 12,
+  },
+  notificationPreviewIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  notificationPreviewContent: {
+    flex: 1,
+  },
+  notificationPreviewItemTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  notificationPreviewItemMessage: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    lineHeight: 16,
   },
   heroSection: {
     paddingHorizontal: 20,

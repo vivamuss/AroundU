@@ -33,7 +33,7 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="search.fill" color={color} />
+            <IconSymbol size={28} name="paperplane.fill" color={color} />
           ),
         }}
       />
@@ -44,7 +44,7 @@ export default function TabLayout() {
         options={{
           title: 'Nearby Offers',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="search.fill" color={color} />
+            <IconSymbol size={28} name="book.fill" color={color} />
           ),
         }}
       />
@@ -55,18 +55,29 @@ export default function TabLayout() {
         options={{
           title: 'My Orders',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="myorders.fill" color={color} />
+            <IconSymbol size={28} name="cart.fill" color={color} />
+          ),
+        }}
+      />
+      
+      {/* Rewards */}
+      <Tabs.Screen
+        name="rewards"
+        options={{
+          title: 'Rewards',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="reward.fill" color={color} />
           ),
         }}
       />
 
-      {/* Offer Posting*/}
+      {/* Offer Posting */}
       <Tabs.Screen
         name="offerposting"
         options={{
-          title: 'Offer Posting',
+          title:"Offer Posting",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="offer_posting.fill" color={color} />
+            <IconSymbol size={28} name="offerposting.fill" color={color} />
           ),
         }}
       />
